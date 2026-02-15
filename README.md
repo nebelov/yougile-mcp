@@ -9,7 +9,7 @@ MCP server for [YouGile](https://yougile.com) project management. **57 tools** c
 
 Works with **Claude**, **ChatGPT**, **Gemini CLI**, **VS Code**, **Cursor**, and any MCP-compatible client.
 
-[README on Russian / README на русском](README.ru.md)
+[README on Russian / README на русском](docs/README.ru.md)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/nebelov/yougile-mcp/main/assets/demo.gif" alt="AI autonomously creates a full project structure in YouGile via MCP" width="640">

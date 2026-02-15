@@ -1,0 +1,5 @@
+src/
+tsconfig.json
+claude-docs/
+*.tgz
+README.ru.md
