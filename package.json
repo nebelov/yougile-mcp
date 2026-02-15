@@ -1,0 +1,56 @@
+{
+  "name": "@nebelov/yougile-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for YouGile project management — 57 tools, full API v2 coverage. Works with Claude, ChatGPT, Gemini, Cursor, VS Code.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "yougile-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skill",
+    "README.md",
+    "README.ru.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "setup": "node dist/index.js --setup",
+    "dev": "tsx watch src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "yougile",
+    "project-management",
+    "tasks",
+    "claude",
+    "chatgpt",
+    "gemini",
+    "ai",
+    "model-context-protocol"
+  ],
+  "author": "nebelov",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nebelov/yougile-mcp"
+  },
+  "homepage": "https://github.com/nebelov/yougile-mcp#readme",
+  "bugs": "https://github.com/nebelov/yougile-mcp/issues",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "axios": "^1.7.9",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
