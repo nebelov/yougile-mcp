@@ -14,6 +14,7 @@ export function registerChatTools(server: McpServer) {
       fromUserId: z.string().optional().describe("Filter by author user UUID"),
       since: z.number().optional().describe("Messages after this timestamp (ms)"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ chatId, ...params }) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -33,6 +34,7 @@ export function registerChatTools(server: McpServer) {
       chatId: z.string().describe("Chat UUID (for task chats = task UUID)"),
       text: z.string().min(1).describe("Message text"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async ({ chatId, text }) => {
       try {
         const data = await yougileRequest<unknown>("POST", `chats/${chatId}/messages`, { text });
@@ -48,6 +50,7 @@ export function registerChatTools(server: McpServer) {
       chatId: z.string().describe("Chat UUID"),
       messageId: z.string().describe("Message ID (timestamp long integer)"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ chatId, messageId }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `chats/${chatId}/messages/${messageId}`);
@@ -63,6 +66,7 @@ export function registerChatTools(server: McpServer) {
       chatId: z.string().describe("Chat UUID"),
       messageId: z.string().describe("Message ID (timestamp long integer)"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ chatId, messageId }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `chats/${chatId}/messages/${messageId}`, { deleted: true });
@@ -79,6 +83,7 @@ export function registerChatTools(server: McpServer) {
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
       title: z.string().optional().describe("Filter by title"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -93,6 +98,7 @@ export function registerChatTools(server: McpServer) {
     "yougile_get_group_chat",
     "Get details of a specific group chat.",
     { id: z.string().describe("Group chat UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `group-chats/${id}`);
@@ -110,6 +116,7 @@ export function registerChatTools(server: McpServer) {
       userRoleMap: z.record(z.enum(["admin", "user"])).describe("Map of userId -> role ('admin' or 'user')"),
       roleConfigMap: z.record(z.object({ notified: z.boolean().default(true) })).describe("Map of role -> config. E.g. {admin: {notified: true}}"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "group-chats", params as Record<string, unknown>);
@@ -127,6 +134,7 @@ export function registerChatTools(server: McpServer) {
       users: z.record(z.object({ notified: z.boolean().default(true) })).optional().describe("Replace users map"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `group-chats/${id}`, body as Record<string, unknown>);

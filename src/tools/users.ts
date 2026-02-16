@@ -12,6 +12,7 @@ export function registerUserTools(server: McpServer) {
       email: z.string().optional().describe("Filter by email"),
       projectId: z.string().optional().describe("Filter by project UUID"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -27,6 +28,7 @@ export function registerUserTools(server: McpServer) {
     "yougile_get_user",
     "Get details of a specific user by ID.",
     { id: z.string().describe("User UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `users/${id}`);
@@ -42,6 +44,7 @@ export function registerUserTools(server: McpServer) {
       email: z.string().email().describe("User email to invite"),
       isAdmin: z.boolean().default(false).describe("Grant admin rights"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "users", params as Record<string, unknown>);
@@ -57,6 +60,7 @@ export function registerUserTools(server: McpServer) {
       id: z.string().describe("User UUID"),
       isAdmin: z.boolean().describe("Grant or revoke admin rights"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `users/${id}`, body as Record<string, unknown>);
@@ -69,6 +73,7 @@ export function registerUserTools(server: McpServer) {
     "yougile_delete_user",
     "Remove a user from the company.",
     { id: z.string().describe("User UUID") },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("DELETE", `users/${id}`);

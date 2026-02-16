@@ -11,6 +11,7 @@ export function registerProjectTools(server: McpServer) {
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
       title: z.string().optional().describe("Filter by title substring"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -25,6 +26,7 @@ export function registerProjectTools(server: McpServer) {
     "yougile_get_project",
     "Get details of a specific project by ID.",
     { id: z.string().describe("Project UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `projects/${id}`);
@@ -40,6 +42,7 @@ export function registerProjectTools(server: McpServer) {
       title: z.string().min(1).describe("Project title"),
       users: z.record(z.string()).optional().describe("Map of userId -> role (admin|worker|observer)"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const body: Record<string, unknown> = { title: params.title };
@@ -59,6 +62,7 @@ export function registerProjectTools(server: McpServer) {
       users: z.record(z.string()).optional().describe("userId -> role map. '-' removes user."),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `projects/${id}`, body as Record<string, unknown>);

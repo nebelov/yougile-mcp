@@ -9,6 +9,7 @@ export function registerProjectRoleTools(server: McpServer) {
     {
       projectId: z.string().describe("Project UUID"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ projectId }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `projects/${projectId}/roles`);
@@ -24,6 +25,7 @@ export function registerProjectRoleTools(server: McpServer) {
       projectId: z.string().describe("Project UUID"),
       roleId: z.string().describe("Role UUID"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ projectId, roleId }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `projects/${projectId}/roles/${roleId}`);
@@ -40,6 +42,7 @@ export function registerProjectRoleTools(server: McpServer) {
       name: z.string().min(1).describe("Role name"),
       users: z.array(z.string()).optional().describe("User UUIDs to assign this role"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ projectId, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("POST", `projects/${projectId}/roles`, body as Record<string, unknown>);
@@ -57,6 +60,7 @@ export function registerProjectRoleTools(server: McpServer) {
       name: z.string().optional().describe("New role name"),
       users: z.array(z.string()).optional().describe("Replace user list"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ projectId, roleId, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `projects/${projectId}/roles/${roleId}`, body as Record<string, unknown>);
@@ -72,6 +76,7 @@ export function registerProjectRoleTools(server: McpServer) {
       projectId: z.string().describe("Project UUID"),
       roleId: z.string().describe("Role UUID"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ projectId, roleId }) => {
       try {
         const data = await yougileRequest<unknown>("DELETE", `projects/${projectId}/roles/${roleId}`);

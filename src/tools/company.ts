@@ -7,6 +7,7 @@ export function registerCompanyTools(server: McpServer) {
     "yougile_get_company",
     "Get current company information.",
     {},
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async () => {
       try {
         const data = await yougileRequest<unknown>("GET", "companies");
@@ -22,6 +23,7 @@ export function registerCompanyTools(server: McpServer) {
       name: z.string().optional().describe("Company name"),
       subdomain: z.string().optional().describe("Company subdomain"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("PUT", "companies", params as Record<string, unknown>);

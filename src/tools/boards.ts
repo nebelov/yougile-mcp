@@ -12,6 +12,7 @@ export function registerBoardTools(server: McpServer) {
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
       title: z.string().optional().describe("Filter by title"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -27,6 +28,7 @@ export function registerBoardTools(server: McpServer) {
     "yougile_get_board",
     "Get details of a specific board by ID.",
     { id: z.string().describe("Board UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `boards/${id}`);
@@ -42,6 +44,7 @@ export function registerBoardTools(server: McpServer) {
       title: z.string().min(1).describe("Board title"),
       projectId: z.string().describe("Parent project UUID"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "boards", params as Record<string, unknown>);
@@ -58,6 +61,7 @@ export function registerBoardTools(server: McpServer) {
       title: z.string().optional().describe("New title"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `boards/${id}`, body as Record<string, unknown>);

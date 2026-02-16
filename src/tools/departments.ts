@@ -10,6 +10,7 @@ export function registerDepartmentTools(server: McpServer) {
       limit: z.number().int().min(1).max(1000).default(50).describe("Max results"),
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -23,6 +24,7 @@ export function registerDepartmentTools(server: McpServer) {
     "yougile_get_department",
     "Get details of a specific department.",
     { id: z.string().describe("Department UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `departments/${id}`);
@@ -38,6 +40,7 @@ export function registerDepartmentTools(server: McpServer) {
       title: z.string().min(1).describe("Department name"),
       users: z.array(z.string()).optional().describe("Array of user UUIDs to add"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "departments", params as Record<string, unknown>);
@@ -55,6 +58,7 @@ export function registerDepartmentTools(server: McpServer) {
       users: z.array(z.string()).optional().describe("Replace user list"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `departments/${id}`, body as Record<string, unknown>);

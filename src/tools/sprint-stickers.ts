@@ -11,6 +11,7 @@ export function registerSprintStickerTools(server: McpServer) {
       limit: z.number().int().min(1).max(1000).default(50).describe("Max results"),
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -25,6 +26,7 @@ export function registerSprintStickerTools(server: McpServer) {
     "yougile_get_sprint_sticker",
     "Get a sprint sticker by ID. States are embedded in the response.",
     { id: z.string().describe("Sticker UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `sprint-stickers/${id}`);
@@ -40,6 +42,7 @@ export function registerSprintStickerTools(server: McpServer) {
       name: z.string().min(1).describe("Sticker name"),
       projectId: z.string().describe("Project UUID"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "sprint-stickers", params as Record<string, unknown>);
@@ -56,6 +59,7 @@ export function registerSprintStickerTools(server: McpServer) {
       name: z.string().optional().describe("New sticker name"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `sprint-stickers/${id}`, body as Record<string, unknown>);
@@ -72,6 +76,7 @@ export function registerSprintStickerTools(server: McpServer) {
       name: z.string().min(1).describe("State name"),
       color: z.string().optional().describe("State color"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ stickerId, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("POST", `sprint-stickers/${stickerId}/states`, body as Record<string, unknown>);
@@ -90,6 +95,7 @@ export function registerSprintStickerTools(server: McpServer) {
       color: z.string().optional().describe("New state color"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ stickerId, stateId, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `sprint-stickers/${stickerId}/states/${stateId}`, body as Record<string, unknown>);

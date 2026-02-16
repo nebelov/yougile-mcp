@@ -12,6 +12,7 @@ export function registerColumnTools(server: McpServer) {
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
       title: z.string().optional().describe("Filter by title"),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
@@ -27,6 +28,7 @@ export function registerColumnTools(server: McpServer) {
     "yougile_get_column",
     "Get details of a specific column by ID.",
     { id: z.string().describe("Column UUID") },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ id }) => {
       try {
         const data = await yougileRequest<unknown>("GET", `columns/${id}`);
@@ -43,6 +45,7 @@ export function registerColumnTools(server: McpServer) {
       boardId: z.string().describe("Parent board UUID"),
       color: z.number().int().min(1).max(16).optional().describe("Column color (1-16)"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "columns", params as Record<string, unknown>);
@@ -61,6 +64,7 @@ export function registerColumnTools(server: McpServer) {
       color: z.number().int().min(1).max(16).optional().describe("New color (1-16)"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `columns/${id}`, body as Record<string, unknown>);

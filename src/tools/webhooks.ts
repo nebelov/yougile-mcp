@@ -7,6 +7,7 @@ export function registerWebhookTools(server: McpServer) {
     "yougile_list_webhooks",
     "List all webhooks. Note: returns a raw array (no paging wrapper).",
     {},
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async () => {
       try {
         const data = await yougileRequest<unknown>("GET", "webhooks");
@@ -23,6 +24,7 @@ export function registerWebhookTools(server: McpServer) {
       event: z.string().describe("Event type to listen for"),
       projectId: z.string().optional().describe("Scope to a specific project UUID"),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async (params) => {
       try {
         const data = await yougileRequest<unknown>("POST", "webhooks", params as Record<string, unknown>);
@@ -41,6 +43,7 @@ export function registerWebhookTools(server: McpServer) {
       disabled: z.boolean().optional().describe("Disable/enable webhook"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
+    { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
       try {
         const data = await yougileRequest<unknown>("PUT", `webhooks/${id}`, body as Record<string, unknown>);
