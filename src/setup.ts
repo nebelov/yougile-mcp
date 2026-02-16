@@ -21,24 +21,20 @@ async function ask(prompt: string, hide = false): Promise<string> {
   });
 }
 
-async function getApiKey(email: string, password: string): Promise<string[]> {
-  // Step 1: Get auth token (login)
-  const loginRes = await axios.post(`${API}/auth/keys`, { login: email, password });
-  if (typeof loginRes.data === "string") return [loginRes.data];
-  if (Array.isArray(loginRes.data)) return loginRes.data;
-  if (loginRes.data?.key) return [loginRes.data.key];
-  throw new Error("Unexpected response from auth/keys: " + JSON.stringify(loginRes.data));
-}
-
-async function getCompanies(token: string): Promise<Array<{ id: string; name: string }>> {
-  const res = await axios.get(`${API}/companies`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  // Response can be a single company object or list
+async function getCompanies(email: string, password: string): Promise<Array<{ id: string; name: string }>> {
+  const res = await axios.post(`${API}/auth/companies`, { login: email, password });
   if (Array.isArray(res.data)) return res.data;
   if (res.data?.content) return res.data.content;
   if (res.data?.id) return [res.data];
-  return [{ id: "unknown", name: "Your Company" }];
+  return [];
+}
+
+async function getApiKey(email: string, password: string, companyId: string): Promise<string> {
+  const res = await axios.post(`${API}/auth/keys`, { login: email, password, companyId });
+  if (typeof res.data === "string") return res.data;
+  if (Array.isArray(res.data)) return res.data[0];
+  if (res.data?.key) return res.data.key;
+  throw new Error("Unexpected response: " + JSON.stringify(res.data));
 }
 
 type ConfigTarget = "claude-code" | "claude-desktop" | "gemini" | "vscode" | "print";
@@ -98,8 +94,11 @@ export async function runSetup() {
   let apiKey: string;
   try {
     console.error("  Authenticating...");
-    const keys = await getApiKey(email, password);
-    apiKey = keys[0];
+    const companies = await getCompanies(email, password);
+    if (!companies.length) throw new Error("No companies found for this account.");
+    const company = companies[0];
+    console.error(`  Company: ${company.name}`);
+    apiKey = await getApiKey(email, password, company.id);
     console.error("  API key obtained!");
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -109,15 +108,6 @@ export async function runSetup() {
       console.error(`  Error: ${msg}`);
     }
     process.exit(1);
-  }
-
-  try {
-    const companies = await getCompanies(apiKey);
-    if (companies.length > 0) {
-      console.error(`  Company: ${companies[0].name}`);
-    }
-  } catch {
-    // Non-critical
   }
 
   console.error("");

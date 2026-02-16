@@ -1,0 +1,2201 @@
+openapi: 3.1.0
+info:
+  title: YouGile API v2
+  description: >
+    YouGile project management API. Manage projects, boards, columns, tasks,
+    users, departments, stickers, chats, and webhooks.
+  version: "2.0.0"
+  contact:
+    name: YouGile
+    url: https://yougile.com
+
+servers:
+  - url: https://yougile.com/api-v2
+    description: YouGile API v2 production server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: >
+        Bearer token. Pass as "Bearer <token>" in the Authorization header.
+        Obtain the token from YouGile company settings.
+
+  schemas:
+    Paging:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Total number of results
+        offset:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        paging:
+          $ref: '#/components/schemas/Paging'
+
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        users:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [admin, worker, observer]
+          description: "Map of userId -> role"
+        deleted:
+          type: boolean
+        timestamp:
+          type: integer
+          format: int64
+
+    Board:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        deleted:
+          type: boolean
+
+    Column:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        boardId:
+          type: string
+          format: uuid
+        color:
+          type: integer
+          minimum: 1
+          maximum: 16
+        deleted:
+          type: boolean
+
+    Deadline:
+      type: object
+      properties:
+        deadline:
+          type: integer
+          format: int64
+          description: Deadline timestamp in milliseconds
+        startDate:
+          type: integer
+          format: int64
+          description: Start date timestamp in milliseconds
+        withTime:
+          type: boolean
+
+    ChecklistItem:
+      type: object
+      properties:
+        title:
+          type: string
+        isCompleted:
+          type: boolean
+          default: false
+
+    Checklist:
+      type: object
+      properties:
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistItem'
+
+    TimeTracking:
+      type: object
+      properties:
+        plan:
+          type: number
+          description: Planned hours
+        work:
+          type: number
+          description: Worked hours
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        columnId:
+          type: string
+          format: uuid
+        assigned:
+          type: array
+          items:
+            type: string
+            format: uuid
+        completed:
+          type: boolean
+        archived:
+          type: boolean
+        deleted:
+          type: boolean
+        deadline:
+          $ref: '#/components/schemas/Deadline'
+        checklists:
+          type: array
+          items:
+            $ref: '#/components/schemas/Checklist'
+        color:
+          type: string
+          enum: [task-primary, gray, red, pink, yellow, green, turquoise, blue, violet]
+        timeTracking:
+          $ref: '#/components/schemas/TimeTracking'
+        timestamp:
+          type: integer
+          format: int64
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        realName:
+          type: string
+        isAdmin:
+          type: boolean
+        deleted:
+          type: boolean
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subdomain:
+          type: string
+
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+        deleted:
+          type: boolean
+
+    ProjectRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    StringSticker:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/StickerState'
+        deleted:
+          type: boolean
+
+    SprintSticker:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/StickerState'
+        deleted:
+          type: boolean
+
+    StickerState:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 12-character hex string
+        name:
+          type: string
+        color:
+          type: string
+        deleted:
+          type: boolean
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Message ID (timestamp long integer)
+        text:
+          type: string
+        fromUserId:
+          type: string
+          format: uuid
+        timestamp:
+          type: integer
+          format: int64
+        deleted:
+          type: boolean
+
+    GroupChat:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        users:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              notified:
+                type: boolean
+        userRoleMap:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [admin, user]
+        roleConfigMap:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              notified:
+                type: boolean
+        deleted:
+          type: boolean
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        event:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        disabled:
+          type: boolean
+        deleted:
+          type: boolean
+
+  parameters:
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 50
+      description: Maximum number of results to return
+
+    OffsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Pagination offset
+
+tags:
+  - name: company
+    description: Company settings
+  - name: projects
+    description: Projects management
+  - name: project-roles
+    description: Roles within projects
+  - name: boards
+    description: Boards within projects
+  - name: columns
+    description: Columns within boards
+  - name: tasks
+    description: Tasks within columns
+  - name: users
+    description: Company users (employees)
+  - name: departments
+    description: Company departments
+  - name: string-stickers
+    description: Custom string labels/tags for tasks
+  - name: sprint-stickers
+    description: Sprint/iteration labels for tasks
+  - name: chat
+    description: Task chats and group chats
+  - name: webhooks
+    description: Webhook subscriptions
+
+paths:
+  # ── Company ───────────────────────────────────────────
+  /companies:
+    get:
+      operationId: getCompany
+      summary: Get current company information
+      tags: [company]
+      responses:
+        '200':
+          description: Company details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+    put:
+      operationId: updateCompany
+      summary: Update company settings
+      tags: [company]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Company name
+                subdomain:
+                  type: string
+                  description: Company subdomain
+      responses:
+        '200':
+          description: Updated company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  # ── Projects ──────────────────────────────────────────
+  /projects:
+    get:
+      operationId: listProjects
+      summary: List all projects in the company
+      tags: [projects]
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Filter by title substring
+      responses:
+        '200':
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createProject
+      summary: Create a new project
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                users:
+                  type: object
+                  additionalProperties:
+                    type: string
+                    enum: [admin, worker, observer]
+                  description: "Map of userId -> role"
+      responses:
+        '200':
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      summary: Get project details by ID
+      tags: [projects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+    put:
+      operationId: updateProject
+      summary: Update a project
+      tags: [projects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                users:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: "userId -> role map. Use '-' as value to remove a user."
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  # ── Project Roles ─────────────────────────────────────
+  /projects/{projectId}/roles:
+    get:
+      operationId: listProjectRoles
+      summary: List roles for a project
+      tags: [project-roles]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+      responses:
+        '200':
+          description: List of project roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectRole'
+
+    post:
+      operationId: createProjectRole
+      summary: Create a new role in a project
+      tags: [project-roles]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: Role name
+                users:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: User UUIDs to assign this role
+      responses:
+        '200':
+          description: Created role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /projects/{projectId}/roles/{roleId}:
+    get:
+      operationId: getProjectRole
+      summary: Get a specific role in a project
+      tags: [project-roles]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Role UUID
+      responses:
+        '200':
+          description: Role details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRole'
+
+    put:
+      operationId: updateProjectRole
+      summary: Update a project role
+      tags: [project-roles]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Role UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New role name
+                users:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Replace user list
+      responses:
+        '200':
+          description: Updated role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRole'
+
+    delete:
+      operationId: deleteProjectRole
+      summary: Delete a project role (hard delete)
+      tags: [project-roles]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Role UUID
+      responses:
+        '200':
+          description: Role deleted
+
+  # ── Boards ────────────────────────────────────────────
+  /boards:
+    get:
+      operationId: listBoards
+      summary: List boards, optionally filter by project
+      tags: [boards]
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by project UUID
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Filter by title
+      responses:
+        '200':
+          description: Paginated list of boards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Board'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createBoard
+      summary: Create a new board inside a project
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, projectId]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                projectId:
+                  type: string
+                  format: uuid
+                  description: Parent project UUID
+      responses:
+        '200':
+          description: Created board
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /boards/{id}:
+    get:
+      operationId: getBoard
+      summary: Get board details by ID
+      tags: [boards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Board UUID
+      responses:
+        '200':
+          description: Board details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Board'
+
+    put:
+      operationId: updateBoard
+      summary: Update a board
+      tags: [boards]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Board UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated board
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Board'
+
+  # ── Columns ───────────────────────────────────────────
+  /columns:
+    get:
+      operationId: listColumns
+      summary: List columns, optionally filter by board
+      tags: [columns]
+      parameters:
+        - name: boardId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by board UUID
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Filter by title
+      responses:
+        '200':
+          description: Paginated list of columns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Column'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createColumn
+      summary: Create a new column inside a board
+      tags: [columns]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, boardId]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                boardId:
+                  type: string
+                  format: uuid
+                  description: Parent board UUID
+                color:
+                  type: integer
+                  minimum: 1
+                  maximum: 16
+                  description: Column color (1-16)
+      responses:
+        '200':
+          description: Created column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /columns/{id}:
+    get:
+      operationId: getColumn
+      summary: Get column details by ID
+      tags: [columns]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Column UUID
+      responses:
+        '200':
+          description: Column details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Column'
+
+    put:
+      operationId: updateColumn
+      summary: Update a column
+      tags: [columns]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Column UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                boardId:
+                  type: string
+                  format: uuid
+                  description: Move to another board
+                color:
+                  type: integer
+                  minimum: 1
+                  maximum: 16
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Column'
+
+  # ── Tasks ─────────────────────────────────────────────
+  /task-list:
+    get:
+      operationId: listTasks
+      summary: >
+        List tasks with filters. Read-only endpoint with advanced filtering
+        (more filters than /tasks).
+      tags: [tasks]
+      parameters:
+        - name: columnId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by column UUID
+        - name: assignedTo
+          in: query
+          schema:
+            type: string
+          description: Filter by assigned user IDs (comma-separated UUIDs)
+        - name: stickerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by sticker UUID
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Filter by title substring
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Paginated list of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+  /tasks:
+    post:
+      operationId: createTask
+      summary: Create a new task in a column
+      tags: [tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, columnId]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                columnId:
+                  type: string
+                  format: uuid
+                  description: Column UUID to place the task in
+                description:
+                  type: string
+                  description: Task description (markdown supported)
+                assigned:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: User UUIDs to assign
+                deadline:
+                  $ref: '#/components/schemas/Deadline'
+                checklists:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Checklist'
+                color:
+                  type: string
+                  enum: [task-primary, gray, red, pink, yellow, green, turquoise, blue, violet]
+                timeTracking:
+                  $ref: '#/components/schemas/TimeTracking'
+      responses:
+        '200':
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      summary: Get full task details
+      tags: [tasks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Task UUID
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    put:
+      operationId: updateTask
+      summary: >
+        Update a task. Can change title, description, columnId (move),
+        assigned, completed, archived, deadline, checklists, color,
+        timeTracking, stickers. To delete deadline or timeTracking, pass
+        {"deleted": true} in that field. To soft-delete the task, set
+        deleted=true.
+      tags: [tasks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Task UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                columnId:
+                  type: string
+                  format: uuid
+                  description: Move to column UUID
+                assigned:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                completed:
+                  type: boolean
+                archived:
+                  type: boolean
+                deleted:
+                  type: boolean
+                  description: Soft-delete task
+                deadline:
+                  oneOf:
+                    - $ref: '#/components/schemas/Deadline'
+                    - type: object
+                      required: [deleted]
+                      properties:
+                        deleted:
+                          type: boolean
+                          enum: [true]
+                  description: Set deadline or pass {deleted:true} to remove
+                checklists:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Checklist'
+                color:
+                  type: string
+                  enum: [task-primary, gray, red, pink, yellow, green, turquoise, blue, violet]
+                timeTracking:
+                  oneOf:
+                    - $ref: '#/components/schemas/TimeTracking'
+                    - type: object
+                      required: [deleted]
+                      properties:
+                        deleted:
+                          type: boolean
+                          enum: [true]
+                  description: Set time tracking or pass {deleted:true} to remove
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{taskId}/chat-subscribers:
+    get:
+      operationId: getTaskChatSubscribers
+      summary: Get users subscribed to a task's chat notifications
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Task UUID
+      responses:
+        '200':
+          description: List of subscribed user UUIDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+
+    put:
+      operationId: setTaskChatSubscribers
+      summary: Set users subscribed to a task's chat notifications (replaces existing list)
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Task UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: Array of user UUIDs to subscribe
+      responses:
+        '200':
+          description: Subscribers updated
+
+  # ── Chat Messages ─────────────────────────────────────
+  /chats/{chatId}/messages:
+    get:
+      operationId: listMessages
+      summary: >
+        Get messages from a chat. For task chats, chatId equals the task UUID.
+        Also works for group chats.
+      tags: [chat]
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Chat UUID (for task chats = task UUID)
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: text
+          in: query
+          schema:
+            type: string
+          description: Search by text content
+        - name: fromUserId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by author user UUID
+        - name: since
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Messages after this timestamp (milliseconds)
+      responses:
+        '200':
+          description: Paginated list of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: sendMessage
+      summary: Send a message to a chat
+      tags: [chat]
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Chat UUID (for task chats = task UUID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Sent message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /chats/{chatId}/messages/{messageId}:
+    get:
+      operationId: getMessage
+      summary: Get a specific message by ID from a chat
+      tags: [chat]
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Chat UUID
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Message ID (timestamp long integer)
+      responses:
+        '200':
+          description: Message details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+    put:
+      operationId: deleteMessage
+      summary: Soft-delete a message (editing text is NOT supported by the API)
+      tags: [chat]
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Chat UUID
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Message ID (timestamp long integer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deleted]
+              properties:
+                deleted:
+                  type: boolean
+                  enum: [true]
+      responses:
+        '200':
+          description: Message deleted
+
+  # ── Group Chats ───────────────────────────────────────
+  /group-chats:
+    get:
+      operationId: listGroupChats
+      summary: List all group chats in the company
+      tags: [chat]
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Filter by title
+      responses:
+        '200':
+          description: Paginated list of group chats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChat'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createGroupChat
+      summary: Create a group chat
+      tags: [chat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, users, userRoleMap, roleConfigMap]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                users:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      notified:
+                        type: boolean
+                        default: true
+                  description: "Map of userId -> {notified: bool}"
+                userRoleMap:
+                  type: object
+                  additionalProperties:
+                    type: string
+                    enum: [admin, user]
+                  description: "Map of userId -> role ('admin' or 'user')"
+                roleConfigMap:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      notified:
+                        type: boolean
+                        default: true
+                  description: "Map of role -> config, e.g. {admin: {notified: true}}"
+      responses:
+        '200':
+          description: Created group chat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /group-chats/{id}:
+    get:
+      operationId: getGroupChat
+      summary: Get details of a specific group chat
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Group chat UUID
+      responses:
+        '200':
+          description: Group chat details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupChat'
+
+    put:
+      operationId: updateGroupChat
+      summary: Update a group chat
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Group chat UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                users:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      notified:
+                        type: boolean
+                        default: true
+                  description: Replace users map
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated group chat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupChat'
+
+  # ── Users ─────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users (employees) in the company
+      tags: [users]
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: email
+          in: query
+          schema:
+            type: string
+          description: Filter by email
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by project UUID
+      responses:
+        '200':
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: inviteUser
+      summary: Invite a user to the company by email
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email to invite
+                isAdmin:
+                  type: boolean
+                  default: false
+                  description: Grant admin rights
+      responses:
+        '200':
+          description: Invited user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      summary: Get user details by ID
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User UUID
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      operationId: updateUser
+      summary: Update a user (admin status)
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isAdmin]
+              properties:
+                isAdmin:
+                  type: boolean
+                  description: Grant or revoke admin rights
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    delete:
+      operationId: deleteUser
+      summary: Remove a user from the company
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User UUID
+      responses:
+        '200':
+          description: User removed
+
+  # ── Departments ───────────────────────────────────────
+  /departments:
+    get:
+      operationId: listDepartments
+      summary: List all departments in the company
+      tags: [departments]
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Paginated list of departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Department'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createDepartment
+      summary: Create a new department
+      tags: [departments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  description: Department name
+                users:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: User UUIDs to add
+      responses:
+        '200':
+          description: Created department
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /departments/{id}:
+    get:
+      operationId: getDepartment
+      summary: Get department details by ID
+      tags: [departments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Department UUID
+      responses:
+        '200':
+          description: Department details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+
+    put:
+      operationId: updateDepartment
+      summary: Update a department
+      tags: [departments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Department UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: New name
+                users:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Replace user list
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated department
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+
+  # ── String Stickers ───────────────────────────────────
+  /string-stickers:
+    get:
+      operationId: listStringStickers
+      summary: List string stickers (custom labels/tags for tasks)
+      tags: [string-stickers]
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by project UUID
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Paginated list of string stickers with embedded states
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StringSticker'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createStringSticker
+      summary: Create a string sticker
+      tags: [string-stickers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, projectId]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: "Sticker name (use 'name' not 'title')"
+                projectId:
+                  type: string
+                  format: uuid
+                  description: Project UUID
+      responses:
+        '200':
+          description: Created sticker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /string-stickers/{id}:
+    get:
+      operationId: getStringSticker
+      summary: Get a string sticker by ID (states are embedded)
+      tags: [string-stickers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Sticker UUID
+      responses:
+        '200':
+          description: Sticker details with states
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringSticker'
+
+    put:
+      operationId: updateStringSticker
+      summary: Update a string sticker
+      tags: [string-stickers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Sticker UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "New sticker name (use 'name' not 'title')"
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated sticker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringSticker'
+
+  /string-stickers/{stickerId}/states:
+    post:
+      operationId: createStringStickerState
+      summary: Create a state (option) for a string sticker
+      tags: [string-stickers]
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Parent sticker UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: State name
+                color:
+                  type: string
+                  description: State color
+      responses:
+        '200':
+          description: Created state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerState'
+
+  /string-stickers/{stickerId}/states/{stateId}:
+    put:
+      operationId: updateStringStickerState
+      summary: Update a state of a string sticker
+      tags: [string-stickers]
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Parent sticker UUID
+        - name: stateId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: State ID (12-character hex string)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New state name
+                color:
+                  type: string
+                  description: New state color
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerState'
+
+  # ── Sprint Stickers ───────────────────────────────────
+  /sprint-stickers:
+    get:
+      operationId: listSprintStickers
+      summary: List sprint stickers (sprint/iteration labels for tasks)
+      tags: [sprint-stickers]
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by project UUID
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Paginated list of sprint stickers with embedded states
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SprintSticker'
+                  paging:
+                    $ref: '#/components/schemas/Paging'
+
+    post:
+      operationId: createSprintSticker
+      summary: Create a sprint sticker
+      tags: [sprint-stickers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, projectId]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: "Sticker name (use 'name' not 'title')"
+                projectId:
+                  type: string
+                  format: uuid
+                  description: Project UUID
+      responses:
+        '200':
+          description: Created sticker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /sprint-stickers/{id}:
+    get:
+      operationId: getSprintSticker
+      summary: Get a sprint sticker by ID (states are embedded)
+      tags: [sprint-stickers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Sticker UUID
+      responses:
+        '200':
+          description: Sticker details with states
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintSticker'
+
+    put:
+      operationId: updateSprintSticker
+      summary: Update a sprint sticker
+      tags: [sprint-stickers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Sticker UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "New sticker name (use 'name' not 'title')"
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated sticker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintSticker'
+
+  /sprint-stickers/{stickerId}/states:
+    post:
+      operationId: createSprintStickerState
+      summary: Create a state (option) for a sprint sticker
+      tags: [sprint-stickers]
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Parent sticker UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: State name
+                color:
+                  type: string
+                  description: State color
+      responses:
+        '200':
+          description: Created state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerState'
+
+  /sprint-stickers/{stickerId}/states/{stateId}:
+    put:
+      operationId: updateSprintStickerState
+      summary: Update a state of a sprint sticker
+      tags: [sprint-stickers]
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Parent sticker UUID
+        - name: stateId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: State ID (12-character hex string)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New state name
+                color:
+                  type: string
+                  description: New state color
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerState'
+
+  # ── Webhooks ──────────────────────────────────────────
+  /webhooks:
+    get:
+      operationId: listWebhooks
+      summary: List all webhooks (returns raw array, no paging wrapper)
+      tags: [webhooks]
+      responses:
+        '200':
+          description: Array of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+    post:
+      operationId: createWebhook
+      summary: Create a webhook to receive events at a URL
+      tags: [webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, event]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Webhook callback URL (HTTPS recommended)
+                event:
+                  type: string
+                  description: Event type to listen for
+                projectId:
+                  type: string
+                  format: uuid
+                  description: Scope to a specific project UUID
+      responses:
+        '200':
+          description: Created webhook
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+
+  /webhooks/{id}:
+    put:
+      operationId: updateWebhook
+      summary: Update a webhook
+      tags: [webhooks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Webhook UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: New callback URL
+                event:
+                  type: string
+                  description: New event type
+                disabled:
+                  type: boolean
+                  description: Disable or enable webhook
+                deleted:
+                  type: boolean
+                  description: Set true to soft-delete
+      responses:
+        '200':
+          description: Updated webhook
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'

@@ -40,13 +40,38 @@ npx @nebelov/yougile-mcp --setup
 
 **Claude Desktop**, **Gemini CLI**, **VS Code** — аналогично (см. [English README](README.md)).
 
-## HTTP-режим (для ChatGPT)
+## Настройка ChatGPT
 
+### Вариант А: Облачный (рекомендуется)
+
+Используйте облачный сервер `you-mcp.com` — ничего устанавливать не нужно.
+
+**В ChatGPT (веб-версия):**
+1. Settings > Apps & Connectors > Advanced > включить **Developer Mode**
+2. Нажать **Create** > вставить `https://you-mcp.com/mcp` > Save
+3. В любом чате нажать **+** > More > Developer Mode > включить коннектор
+4. ChatGPT перенаправит на страницу входа — введите email и пароль от YouGile
+5. Данные отправляются напрямую в YouGile API (zero-knowledge прокси — сервер никогда не видит ваш пароль)
+
+### Вариант Б: Свой сервер (ngrok)
+
+> Нужен [ngrok](https://ngrok.com/) (бесплатный).
+
+**Шаг 1.** Запустите сервер с HTTP-транспортом:
 ```bash
 YOUGILE_API_KEY=ваш-ключ npx @nebelov/yougile-mcp --http --port 3000
 ```
 
-В ChatGPT: Settings > Apps > Create > вставить `http://localhost:3000/mcp`
+**Шаг 2.** В другом терминале создайте HTTPS-туннель:
+```bash
+ngrok http 3000
+```
+Скопируйте URL вида `https://...ngrok-free.app` из вывода ngrok.
+
+**Шаг 3.** В ChatGPT (веб-версия):
+1. Settings > Apps & Connectors > Advanced > включить **Developer Mode**
+2. Нажать **Create** > вставить `https://ВАШ-URL.ngrok-free.app/mcp` > Save
+3. В любом чате нажать **+** > More > Developer Mode > включить коннектор
 
 ## Инструменты (57)
 

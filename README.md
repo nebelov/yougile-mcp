@@ -1,29 +1,36 @@
 # @nebelov/yougile-mcp
 
-MCP-сервер для [YouGile](https://yougile.com) — управление проектами через AI. **57 инструментов**, 100% покрытие YouGile API v2.
+[![npm version](https://img.shields.io/npm/v/@nebelov/yougile-mcp.svg)](https://www.npmjs.com/package/@nebelov/yougile-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 
-Работает с **Claude**, **ChatGPT**, **Gemini CLI**, **VS Code**, **Cursor** и любым MCP-совместимым клиентом.
+MCP server for [YouGile](https://yougile.com) project management. **57 tools** covering 100% of YouGile API v2.
+
+Works with **Claude**, **ChatGPT**, **Gemini CLI**, **VS Code**, **Cursor**, and any MCP-compatible client.
+
+[README on Russian / README на русском](docs/README.ru.md)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/nebelov/yougile-mcp/main/assets/demo.gif" alt="AI автономно создаёт структуру проекта в YouGile через MCP" width="640">
+  <img src="https://raw.githubusercontent.com/nebelov/yougile-mcp/main/assets/demo.gif" alt="AI autonomously creates a full project structure in YouGile via MCP" width="640">
   <br>
-  <em>AI-агент создаёт проект, доски, колонки и задачи с описаниями — всё через MCP</em>
+  <em>AI agent creates project, boards, columns, and tasks with rich descriptions — all via MCP</em>
 </p>
 
-## Быстрый старт
+## Quick Start
 
-### Автонастройка (рекомендуется)
+### Auto-setup (recommended)
 
 ```bash
 npx @nebelov/yougile-mcp --setup
 ```
 
-Авторизуется в YouGile, получает API-ключ и прописывает конфиг для вашего AI-инструмента.
+Logs you into YouGile, gets an API key, and writes the config for your AI tool.
 
-### Ручная настройка
+### Manual setup
 
-1. Получите API-ключ в YouGile (Настройки > API или `POST /auth/keys`)
-2. Добавьте в конфиг AI-инструмента:
+1. Get an API key from YouGile (Settings > API or `POST /auth/keys`)
+2. Add to your AI tool config:
 
 **Claude Code** (`~/.claude.json`):
 ```json
@@ -32,50 +39,130 @@ npx @nebelov/yougile-mcp --setup
     "yougile": {
       "command": "npx",
       "args": ["-y", "@nebelov/yougile-mcp"],
-      "env": { "YOUGILE_API_KEY": "ваш-ключ" }
+      "env": { "YOUGILE_API_KEY": "your-key" }
     }
   }
 }
 ```
 
-**Claude Desktop**, **Gemini CLI**, **VS Code** — аналогично (см. [English README](docs/README.en.md)).
-
-## HTTP-режим (для ChatGPT)
-
-```bash
-YOUGILE_API_KEY=ваш-ключ npx @nebelov/yougile-mcp --http --port 3000
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "yougile": {
+      "command": "npx",
+      "args": ["-y", "@nebelov/yougile-mcp"],
+      "env": { "YOUGILE_API_KEY": "your-key" }
+    }
+  }
+}
 ```
 
-В ChatGPT: Settings > Apps > Create > вставить `http://localhost:3000/mcp`
+**Gemini CLI** (`~/.gemini/settings.json`):
+```json
+{
+  "mcpServers": {
+    "yougile": {
+      "command": "npx",
+      "args": ["-y", "@nebelov/yougile-mcp"],
+      "env": { "YOUGILE_API_KEY": "your-key" }
+    }
+  }
+}
+```
 
-## Инструменты (57)
+**VS Code** (`.vscode/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "yougile": {
+      "command": "npx",
+      "args": ["-y", "@nebelov/yougile-mcp"],
+      "env": { "YOUGILE_API_KEY": "your-key" }
+    }
+  }
+}
+```
 
-| Модуль | Кол-во | Описание |
-|--------|--------|----------|
-| projects | 4 | список, получить, создать, обновить |
-| boards | 4 | доски: список, получить, создать, обновить |
-| columns | 4 | колонки: список, получить, создать, обновить |
-| tasks | 6 | задачи + подписчики чата |
-| chat | 8 | сообщения + групповые чаты |
-| users | 5 | пользователи: список, получить, пригласить, обновить, удалить |
-| company | 2 | компания: получить, обновить |
-| departments | 4 | отделы: список, получить, создать, обновить |
-| project-roles | 5 | роли проекта: CRUD + удаление |
-| string-stickers | 6 | стикеры (строковые): CRUD + состояния |
-| sprint-stickers | 6 | стикеры (спринт): CRUD + состояния |
-| webhooks | 3 | вебхуки: список, создать, обновить |
+## ChatGPT Setup
 
-## Навык (Skill)
+### Option A: Hosted (recommended)
 
-В пакете есть `skill/SKILL.md` — лучшие практики работы с YouGile через AI. Скопируйте в навыки Claude Code для лучшего управления задачами.
+Use the hosted server at `you-mcp.com` — no installation needed.
 
-## Паттерны API
+**In ChatGPT (web):**
+1. Settings > Apps & Connectors > Advanced > **Developer Mode** ON
+2. Click **Create** > paste `https://you-mcp.com/mcp` > Save
+3. Open any chat > click **+** > More > Developer Mode > enable your connector
+4. ChatGPT will redirect you to login with your YouGile email and password
+5. Your credentials go directly to YouGile's API (zero-knowledge proxy — the server never sees your password)
 
-- **Удаление**: `PUT {deleted: true}` для всех сущностей. `DELETE` только для ролей проекта.
-- **Стикеры**: поле `name` (не `title`).
-- **assigned в задачах**: массив UUID `["uuid1"]`, не объект.
-- **Сообщения**: редактирование текста невозможно, только `{deleted: true}`.
+### Option B: Self-hosted (ngrok)
 
-## Лицензия
+> Requires [ngrok](https://ngrok.com/) (free).
+
+**Step 1.** Start the server with HTTP transport:
+```bash
+YOUGILE_API_KEY=your-key npx @nebelov/yougile-mcp --http --port 3000
+```
+
+**Step 2.** In a second terminal, create an HTTPS tunnel:
+```bash
+ngrok http 3000
+```
+Copy the `https://...ngrok-free.app` URL from ngrok output.
+
+**Step 3.** In ChatGPT (web):
+1. Settings > Apps & Connectors > Advanced > **Developer Mode** ON
+2. Click **Create** > paste `https://YOUR-URL.ngrok-free.app/mcp` > Save
+3. Open any chat > click **+** > More > Developer Mode > enable your connector
+
+## Available Tools (57)
+
+| Module | Tools | Description |
+|--------|-------|-------------|
+| projects | 4 | list, get, create, update |
+| boards | 4 | list, get, create, update |
+| columns | 4 | list, get, create, update |
+| tasks | 6 | list, get, create, update, get/set chat-subscribers |
+| chat | 8 | messages (list, send, get, delete) + group chats (list, get, create, update) |
+| users | 5 | list, get, invite, update, delete |
+| company | 2 | get, update |
+| departments | 4 | list, get, create, update |
+| project-roles | 5 | list, get, create, update, delete |
+| string-stickers | 6 | CRUD + create/update state |
+| sprint-stickers | 6 | CRUD + create/update state |
+| webhooks | 3 | list, create, update |
+
+## Bundled Skill
+
+The package includes `skill/SKILL.md` — a best-practices guide for working with YouGile through AI. Copy it to your project or Claude Code skills directory for better task management.
+
+## API Patterns
+
+- **Soft delete**: `PUT {deleted: true}` works for all entities. `DELETE` method only works for project roles.
+- **Pagination**: `{paging: {count, limit, offset, next}, content: [...]}`. Exception: `/webhooks` returns raw array.
+- **Sticker fields**: Use `name` (not `title`) for stickers and states.
+- **Task assigned**: Array of UUIDs `["uuid1", "uuid2"]`, not an object.
+- **Chat messages**: `PUT` only supports `{deleted: true}` — editing text is not possible.
+- **State IDs**: 12-char hex strings (not UUID).
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `YOUGILE_API_KEY` | Yes | YouGile API key |
+| `YOUGILE_API_HOST_URL` | No | Custom API URL (default: `https://yougile.com/api-v2`) |
+
+## Development
+
+```bash
+git clone https://github.com/nebelov/yougile-mcp
+cd yougile-mcp
+npm install
+npm run dev
+```
+
+## License
 
 MIT

@@ -1,8 +1,11 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 const API_BASE_URL = process.env.YOUGILE_API_HOST_URL || "https://yougile.com/api-v2";
-const API_KEY = process.env.YOUGILE_API_KEY || "";
 const CHARACTER_LIMIT = 25000;
+
+// Per-request API key (for multi-user hosted mode)
+export const apiKeyStore = new AsyncLocalStorage<string>();
 
 export async function yougileRequest<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
@@ -10,12 +13,13 @@ export async function yougileRequest<T>(
   data?: Record<string, unknown> | unknown[],
   params?: Record<string, string | number | boolean>
 ): Promise<T> {
+  const apiKey = apiKeyStore.getStore() || process.env.YOUGILE_API_KEY || "";
   const url = `${API_BASE_URL}/${path}`;
   const config: AxiosRequestConfig = {
     method,
     url,
     headers: {
-      "Authorization": `Bearer ${API_KEY}`,
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     timeout: 30000,

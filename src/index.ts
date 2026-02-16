@@ -2,7 +2,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerAllTools } from "./tools/index.js";
+import axios from "axios";
 
+const API = process.env.YOUGILE_API_HOST_URL || "https://yougile.com/api-v2";
 const args = process.argv.slice(2);
 const isHttp = args.includes("--http");
 const isSetup = args.includes("--setup");
@@ -13,15 +15,47 @@ if (isSetup) {
   process.exit(0);
 }
 
+if (args.includes("--oauth")) {
+  const { startOAuthServer } = await import("./oauth-server.js");
+  await startOAuthServer();
+  // Don't continue to stdio/http modes
+  await new Promise(() => {}); // Keep process alive
+}
+
+// Auth: API key OR login+password (auto-gets key)
 if (!process.env.YOUGILE_API_KEY) {
-  console.error("ERROR: YOUGILE_API_KEY environment variable is required.");
-  console.error("");
-  console.error("Quick start:");
-  console.error("  1. Run: npx @nebelov/yougile-mcp --setup");
-  console.error("  2. Or set manually: export YOUGILE_API_KEY=your-key");
-  console.error("");
-  console.error("Get API key: POST https://yougile.com/api-v2/auth/keys");
-  process.exit(1);
+  const login = process.env.YOUGILE_LOGIN;
+  const password = process.env.YOUGILE_PASSWORD;
+  if (login && password) {
+    try {
+      console.error("Authenticating...");
+      // Step 1: get companies
+      const compRes = await axios.post(`${API}/auth/companies`, { login, password });
+      const companies = Array.isArray(compRes.data) ? compRes.data : compRes.data?.content || [];
+      if (!companies.length) throw new Error("No companies found for this account");
+      const companyId = companies[0].id;
+      console.error(`Company: ${companies[0].name}`);
+      // Step 2: get/create API key
+      const keyRes = await axios.post(`${API}/auth/keys`, { login, password, companyId });
+      const key = typeof keyRes.data === "string" ? keyRes.data :
+        Array.isArray(keyRes.data) ? keyRes.data[0] : keyRes.data?.key || keyRes.data;
+      if (!key || typeof key !== "string") throw new Error("No API key returned");
+      process.env.YOUGILE_API_KEY = key;
+      console.error("OK!");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const detail = (e as { response?: { data?: unknown } })?.response?.data;
+      console.error(`Auth failed: ${msg}${detail ? " — " + JSON.stringify(detail) : ""}`);
+      process.exit(1);
+    }
+  } else {
+    console.error("ERROR: Set YOUGILE_API_KEY or YOUGILE_LOGIN + YOUGILE_PASSWORD");
+    console.error("");
+    console.error("  Option 1: YOUGILE_LOGIN=email YOUGILE_PASSWORD=pass npx @nebelov/yougile-mcp");
+    console.error("  Option 2: YOUGILE_API_KEY=key npx @nebelov/yougile-mcp");
+    console.error("  Option 3: npx @nebelov/yougile-mcp --setup");
+    process.exit(1);
+  }
 }
 
 const server = new McpServer({

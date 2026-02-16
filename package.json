@@ -1,6 +1,6 @@
 {
   "name": "@nebelov/yougile-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP server for YouGile project management — 57 tools, full API v2 coverage. Works with Claude, ChatGPT, Gemini, Cursor, VS Code.",
   "type": "module",
   "main": "dist/index.js",

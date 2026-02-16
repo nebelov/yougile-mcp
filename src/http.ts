@@ -1,10 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { registerAllTools } from "./tools/index.js";
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 
 export async function startHttpServer(server: McpServer, port: number) {
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-
   const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     // CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -19,7 +18,17 @@ export async function startHttpServer(server: McpServer, port: number) {
     }
 
     if (req.url === "/mcp" || req.url?.startsWith("/mcp?")) {
-      await transport.handleRequest(req, res);
+      // SDK requires a fresh transport per stateless request
+      const reqServer = new McpServer({ name: "yougile-mcp", version: "1.0.0" });
+      registerAllTools(reqServer);
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+      await reqServer.connect(transport);
+      try {
+        await transport.handleRequest(req, res);
+      } finally {
+        await transport.close();
+        await reqServer.close();
+      }
     } else if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok", tools: 57 }));
@@ -28,8 +37,6 @@ export async function startHttpServer(server: McpServer, port: number) {
       res.end(JSON.stringify({ error: "Not found. Use POST /mcp for MCP protocol." }));
     }
   });
-
-  await server.connect(transport);
 
   httpServer.listen(port, () => {
     console.error(`YouGile MCP server (HTTP) running at http://localhost:${port}/mcp`);
