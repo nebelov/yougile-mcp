@@ -66,6 +66,7 @@ export function registerTaskTools(server: McpServer) {
         plan: z.number().optional().describe("Planned hours"),
         work: z.number().optional().describe("Worked hours"),
       }).optional().describe("Time tracking"),
+      stickers: z.record(z.string(), z.string()).optional().describe("Stickers with states: {sticker_id: state_id}"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
@@ -108,6 +109,7 @@ export function registerTaskTools(server: McpServer) {
         z.object({ plan: z.number().optional(), work: z.number().optional() }),
         z.object({ deleted: z.literal(true) }),
       ]).optional().describe("Set or remove time tracking"),
+      stickers: z.record(z.string(), z.string()).optional().describe("Stickers with states: {sticker_id: state_id}"),
     },
     { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
