@@ -37,10 +37,14 @@ export function registerStringStickerTools(server: McpServer) {
 
   server.tool(
     "yougile_create_string_sticker",
-    "Create a string sticker. Use 'name' field (not 'title').",
+    "Create a string sticker. Use 'name' field (not 'title'). Optionally pass states: [{name, color}].",
     {
       name: z.string().min(1).describe("Sticker name"),
-      projectId: z.string().describe("Project UUID"),
+      icon: z.string().optional().describe("Sticker icon"),
+      states: z.array(z.object({
+        name: z.string().min(1).describe("State name"),
+        color: z.string().optional().describe("State color, e.g. #FF0000"),
+      })).optional().describe("Sticker states (options)"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
