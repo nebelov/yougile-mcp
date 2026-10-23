@@ -2,6 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { yougileRequest, ok, err } from "../services/api.js";
 
+const boardStickers = z.object({
+  timer: z.boolean().optional(),
+  deadline: z.boolean().optional(),
+  stopwatch: z.boolean().optional(),
+  timeTracking: z.boolean().optional(),
+  assignee: z.boolean().optional(),
+  repeat: z.boolean().optional(),
+  custom: z.record(z.string(), z.boolean()).optional().describe("Custom stickers: { stickerUUID: true } to show, false to hide"),
+}).describe("Stickers enabled on the board");
+
 export function registerBoardTools(server: McpServer) {
   server.tool(
     "yougile_list_boards",
@@ -43,6 +53,7 @@ export function registerBoardTools(server: McpServer) {
     {
       title: z.string().min(1).describe("Board title"),
       projectId: z.string().describe("Parent project UUID"),
+      stickers: boardStickers.optional(),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
@@ -55,10 +66,12 @@ export function registerBoardTools(server: McpServer) {
 
   server.tool(
     "yougile_update_board",
-    "Update a board (title, stickers, or soft-delete).",
+    "Update a board (title, stickers, move to another project, or soft-delete).",
     {
       id: z.string().describe("Board UUID"),
       title: z.string().optional().describe("New title"),
+      projectId: z.string().optional().describe("Move board to this project UUID"),
+      stickers: boardStickers.optional(),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
     { readOnlyHint: false, destructiveHint: true, openWorldHint: false },

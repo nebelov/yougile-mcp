@@ -18,15 +18,18 @@ export function registerCompanyTools(server: McpServer) {
 
   server.tool(
     "yougile_update_company",
-    "Update company settings (name, subdomain, etc.).",
+    "Update company settings (title or configurator data).",
     {
-      name: z.string().optional().describe("Company name"),
-      subdomain: z.string().optional().describe("Company subdomain"),
+      title: z.string().optional().describe("Company name"),
+      name: z.string().optional().describe("Deprecated alias of title"),
+      apiData: z.record(z.string(), z.unknown()).optional().describe("Configurator data object"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    async (params) => {
+    async ({ name, ...params }) => {
       try {
-        const data = await yougileRequest<unknown>("PUT", "companies", params as Record<string, unknown>);
+        const body = { ...params, ...(params.title === undefined && name !== undefined ? { title: name } : {}) };
+        if (Object.keys(body).length === 0) return err(new Error("Nothing to update: pass title or apiData"));
+        const data = await yougileRequest<unknown>("PUT", "companies", body as Record<string, unknown>);
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }
     }

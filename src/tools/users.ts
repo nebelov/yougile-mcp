@@ -43,6 +43,7 @@ export function registerUserTools(server: McpServer) {
     {
       email: z.string().email().describe("User email to invite"),
       isAdmin: z.boolean().default(false).describe("Grant admin rights"),
+      messengerOnly: z.boolean().optional().describe("Invite as messenger-only user"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async (params) => {
@@ -55,10 +56,11 @@ export function registerUserTools(server: McpServer) {
 
   server.tool(
     "yougile_update_user",
-    "Update a user. Only supports changing admin status.",
+    "Update a user: admin status and messenger-only mode.",
     {
       id: z.string().describe("User UUID"),
-      isAdmin: z.boolean().describe("Grant or revoke admin rights"),
+      isAdmin: z.boolean().optional().describe("Grant or revoke admin rights"),
+      messengerOnly: z.boolean().optional().describe("Messenger-only mode"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ id, ...body }) => {

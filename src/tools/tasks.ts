@@ -2,6 +2,24 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { yougileRequest, ok, err } from "../services/api.js";
 
+const taskColor = z.enum([
+  "task-primary", "task-gray", "task-red", "task-pink", "task-yellow",
+  "task-green", "task-turquoise", "task-blue", "task-violet",
+]).describe("Card color");
+
+const checklists = z.array(z.object({
+  title: z.string(),
+  items: z.array(z.object({
+    title: z.string(),
+    isCompleted: z.boolean().default(false),
+  })),
+}));
+
+const taskStickers = z.record(z.union([z.string(), z.array(z.string())])).describe(
+  "Custom stickers: { stickerUUID: value }. Value: state ID (12-char hex); array of state IDs for multi-value stickers; " +
+  "free text or a numeric string for free-field stickers; \"-\" detaches the sticker; \"empty\" attaches it without a state"
+);
+
 export function registerTaskTools(server: McpServer) {
   server.tool(
     "yougile_list_tasks",
@@ -43,10 +61,10 @@ export function registerTaskTools(server: McpServer) {
 
   server.tool(
     "yougile_create_task",
-    `Create a new task in a column. Supports: title, description, assigned users, deadline (timestamp ms), checklists, color (task-primary/gray/red/pink/yellow/green/turquoise/blue/violet), time tracking, stickers.`,
+    `Create a new task. Supports: title, column, description, assigned users, deadline (timestamp ms), checklists, color, time tracking, subtasks, custom stickers.`,
     {
       title: z.string().min(1).describe("Task title"),
-      columnId: z.string().describe("Column UUID to place the task in"),
+      columnId: z.string().optional().describe("Column UUID to place the task in (optional per API)"),
       description: z.string().optional().describe("Task description (markdown supported)"),
       assigned: z.array(z.string()).optional().describe("Array of user UUIDs to assign"),
       deadline: z.object({
@@ -54,18 +72,17 @@ export function registerTaskTools(server: McpServer) {
         startDate: z.number().optional().describe("Start date timestamp in ms"),
         withTime: z.boolean().optional().describe("Include time in deadline"),
       }).optional().describe("Deadline settings"),
-      checklists: z.array(z.object({
-        title: z.string(),
-        items: z.array(z.object({
-          title: z.string(),
-          isCompleted: z.boolean().default(false),
-        })),
-      })).optional().describe("Checklists with items"),
-      color: z.string().optional().describe("Task color: task-primary|gray|red|pink|yellow|green|turquoise|blue|violet"),
+      checklists: checklists.optional().describe("Checklists with items"),
+      color: taskColor.optional(),
       timeTracking: z.object({
-        plan: z.number().optional().describe("Planned hours"),
-        work: z.number().optional().describe("Worked hours"),
-      }).optional().describe("Time tracking"),
+        plan: z.number().describe("Planned hours"),
+        work: z.number().describe("Worked hours"),
+      }).optional().describe("Time tracking (both plan and work are required by the API)"),
+      subtasks: z.array(z.string()).optional().describe("Subtask UUIDs"),
+      stickers: taskStickers.optional(),
+      completed: z.boolean().optional().describe("Create as completed"),
+      archived: z.boolean().optional().describe("Create as archived"),
+      idempotencyKey: z.string().optional().describe("Repeating a request with the same key returns the already created task"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
@@ -78,36 +95,32 @@ export function registerTaskTools(server: McpServer) {
 
   server.tool(
     "yougile_update_task",
-    `Update a task. Can change: title, description, columnId (move), assigned, completed, archived, deadline, checklists, color, timeTracking, stickers. To delete deadline/timer: pass { deleted: true } inside that field. To soft-delete task: set deleted=true.`,
+    `Update a task. Can change: title, description, columnId (move, "-" removes from column), assigned, completed, archived, deadline, checklists, color, timeTracking, subtasks, stickers. To remove deadline or time tracking pass { deleted: true } inside that field. To soft-delete the task set deleted=true.`,
     {
       id: z.string().describe("Task UUID"),
       title: z.string().optional().describe("New title"),
       description: z.string().optional().describe("New description"),
-      columnId: z.string().optional().describe("Move to column UUID"),
+      columnId: z.string().optional().describe("Move to column UUID; \"-\" removes the task from its column"),
       assigned: z.array(z.string()).optional().describe("New assigned user UUIDs"),
       completed: z.boolean().optional().describe("Mark as completed"),
       archived: z.boolean().optional().describe("Archive task"),
       deleted: z.boolean().optional().describe("Soft-delete task"),
-      deadline: z.union([
-        z.object({
-          deadline: z.number(),
-          startDate: z.number().optional(),
-          withTime: z.boolean().optional(),
-        }),
-        z.object({ deleted: z.literal(true) }),
-      ]).optional().describe("Set or remove deadline"),
-      color: z.string().optional().describe("Task color"),
-      checklists: z.array(z.object({
-        title: z.string(),
-        items: z.array(z.object({
-          title: z.string(),
-          isCompleted: z.boolean().default(false),
-        })),
-      })).optional().describe("Replace checklists"),
-      timeTracking: z.union([
-        z.object({ plan: z.number().optional(), work: z.number().optional() }),
-        z.object({ deleted: z.literal(true) }),
-      ]).optional().describe("Set or remove time tracking"),
+      deadline: z.object({
+        deadline: z.number().optional().describe("Deadline timestamp in ms"),
+        startDate: z.number().optional().describe("Start date timestamp in ms"),
+        withTime: z.boolean().optional(),
+        deleted: z.boolean().optional().describe("true detaches the deadline sticker"),
+        empty: z.boolean().optional().describe("true attaches an empty deadline sticker"),
+      }).optional().describe("Set, change or remove deadline"),
+      color: taskColor.optional(),
+      checklists: checklists.optional().describe("Replace checklists"),
+      timeTracking: z.object({
+        plan: z.number().optional().describe("Planned hours"),
+        work: z.number().optional().describe("Worked hours"),
+        deleted: z.boolean().optional().describe("true detaches the time tracking sticker"),
+      }).optional().describe("Set, change or remove time tracking"),
+      subtasks: z.array(z.string()).optional().describe("Replace subtask UUIDs"),
+      stickers: taskStickers.optional(),
     },
     { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     async ({ id, ...body }) => {
@@ -141,7 +154,7 @@ export function registerTaskTools(server: McpServer) {
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async ({ taskId, userIds }) => {
       try {
-        const data = await yougileRequest<unknown>("PUT", `tasks/${taskId}/chat-subscribers`, userIds as unknown[]);
+        const data = await yougileRequest<unknown>("PUT", `tasks/${taskId}/chat-subscribers`, { content: userIds });
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }
     }

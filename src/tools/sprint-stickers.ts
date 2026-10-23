@@ -7,7 +7,9 @@ export function registerSprintStickerTools(server: McpServer) {
     "yougile_list_sprint_stickers",
     "List sprint stickers (sprint/iteration labels for tasks). States are embedded in each sticker object.",
     {
-      projectId: z.string().optional().describe("Filter by project UUID"),
+      boardId: z.string().optional().describe("Only stickers enabled on this board"),
+      name: z.string().optional().describe("Filter by sticker name"),
+      includeDeleted: z.boolean().optional().describe("Include deleted stickers"),
       limit: z.number().int().min(1).max(1000).default(50).describe("Max results"),
       offset: z.number().int().min(0).default(0).describe("Pagination offset"),
     },
@@ -15,7 +17,9 @@ export function registerSprintStickerTools(server: McpServer) {
     async (params) => {
       try {
         const qp: Record<string, string | number | boolean> = { limit: params.limit, offset: params.offset };
-        if (params.projectId) qp.projectId = params.projectId;
+        if (params.boardId) qp.boardId = params.boardId;
+        if (params.name) qp.name = params.name;
+        if (params.includeDeleted !== undefined) qp.includeDeleted = params.includeDeleted;
         const data = await yougileRequest<unknown>("GET", "sprint-stickers", undefined, qp);
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }
@@ -37,10 +41,15 @@ export function registerSprintStickerTools(server: McpServer) {
 
   server.tool(
     "yougile_create_sprint_sticker",
-    "Create a sprint sticker. Use 'name' field (not 'title').",
+    "Create a sprint sticker (company-wide). Use 'name' field (not 'title'). Optionally pass initial sprint states.",
     {
       name: z.string().min(1).describe("Sticker name"),
-      projectId: z.string().describe("Project UUID"),
+      states: z.array(z.object({
+        name: z.string().min(1).describe("Sprint name"),
+        begin: z.number().optional().describe("Sprint start, Unix time in seconds"),
+        end: z.number().optional().describe("Sprint end, Unix time in seconds"),
+        deleted: z.boolean().optional(),
+      })).optional().describe("Initial sprint states"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
@@ -73,12 +82,15 @@ export function registerSprintStickerTools(server: McpServer) {
     "Create a state (option) for a sprint sticker.",
     {
       stickerId: z.string().describe("Parent sticker UUID"),
-      name: z.string().min(1).describe("State name"),
-      color: z.string().optional().describe("State color"),
+      name: z.string().min(1).describe("Sprint name"),
+      begin: z.number().optional().describe("Sprint start, Unix time in seconds"),
+      end: z.number().optional().describe("Sprint end, Unix time in seconds"),
+      color: z.string().optional().describe("Not supported for sprint states; kept only to reject old calls explicitly"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    async ({ stickerId, ...body }) => {
+    async ({ stickerId, color, ...body }) => {
       try {
+        if (color !== undefined) return err(new Error("Sprint sticker states have no color in YouGile API v2; use begin/end"));
         const data = await yougileRequest<unknown>("POST", `sprint-stickers/${stickerId}/states`, body as Record<string, unknown>);
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }
@@ -91,13 +103,16 @@ export function registerSprintStickerTools(server: McpServer) {
     {
       stickerId: z.string().describe("Parent sticker UUID"),
       stateId: z.string().describe("State ID (12-char hex)"),
-      name: z.string().optional().describe("New state name"),
-      color: z.string().optional().describe("New state color"),
+      name: z.string().optional().describe("New sprint name"),
+      begin: z.number().optional().describe("Sprint start, Unix time in seconds"),
+      end: z.number().optional().describe("Sprint end, Unix time in seconds"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
+      color: z.string().optional().describe("Not supported for sprint states; kept only to reject old calls explicitly"),
     },
     { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-    async ({ stickerId, stateId, ...body }) => {
+    async ({ stickerId, stateId, color, ...body }) => {
       try {
+        if (color !== undefined) return err(new Error("Sprint sticker states have no color in YouGile API v2; use begin/end"));
         const data = await yougileRequest<unknown>("PUT", `sprint-stickers/${stickerId}/states/${stateId}`, body as Record<string, unknown>);
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }

@@ -38,7 +38,8 @@ export function registerDepartmentTools(server: McpServer) {
     "Create a new department.",
     {
       title: z.string().min(1).describe("Department name"),
-      users: z.array(z.string()).optional().describe("Array of user UUIDs to add"),
+      parentId: z.string().optional().describe("Parent department UUID"),
+      users: z.record(z.enum(["manager", "member"])).optional().describe("Map of userId -> role (manager|member)"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async (params) => {
@@ -55,7 +56,8 @@ export function registerDepartmentTools(server: McpServer) {
     {
       id: z.string().describe("Department UUID"),
       title: z.string().optional().describe("New name"),
-      users: z.array(z.string()).optional().describe("Replace user list"),
+      parentId: z.string().optional().describe("New parent department UUID"),
+      users: z.record(z.enum(["manager", "member", "-", ""])).optional().describe("userId -> role (manager|member); '-' or '' removes the user"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
     { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
