@@ -2,6 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { yougileRequest, ok, err } from "../services/api.js";
 
+const webhookFilters = z.array(z.discriminatedUnion("name", [
+  z.object({ name: z.literal("location"), value: z.union([z.string(), z.array(z.string())]).describe("Project/board/column UUID or list of UUIDs") }),
+  z.object({ name: z.literal("title"), value: z.string().describe("Regexp for the object title") }),
+  z.object({ name: z.literal("chat_message"), value: z.string().describe("Regexp for the chat message text") }),
+]));
+
 export function registerWebhookTools(server: McpServer) {
   server.tool(
     "yougile_list_webhooks",
@@ -21,13 +27,16 @@ export function registerWebhookTools(server: McpServer) {
     "Create a webhook to receive events at a URL.",
     {
       url: z.string().url().describe("Webhook callback URL (HTTPS recommended)"),
-      event: z.string().describe("Event type to listen for"),
-      projectId: z.string().optional().describe("Scope to a specific project UUID"),
+      event: z.string().describe("Event, format <object>-<event>, e.g. task-created, task-moved, chat_message-created, or .* for all"),
+      filters: webhookFilters.optional().describe("Optional filters, e.g. [{ name: 'location', value: ['<projectOrBoardUUID>'] }]; empty list if omitted"),
+      projectId: z.string().optional().describe("Deprecated: converted to a location filter for this project"),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    async (params) => {
+    async ({ filters, projectId, ...params }) => {
       try {
-        const data = await yougileRequest<unknown>("POST", "webhooks", params as Record<string, unknown>);
+        const all = [...(filters ?? [])];
+        if (projectId) all.push({ name: "location", value: [projectId] });
+        const data = await yougileRequest<unknown>("POST", "webhooks", { ...params, filters: all } as Record<string, unknown>);
         return ok(JSON.stringify(data, null, 2));
       } catch (e) { return err(e); }
     }
@@ -40,6 +49,7 @@ export function registerWebhookTools(server: McpServer) {
       id: z.string().describe("Webhook UUID"),
       url: z.string().url().optional().describe("New callback URL"),
       event: z.string().optional().describe("New event type"),
+      filters: webhookFilters.optional().describe("Replace filters"),
       disabled: z.boolean().optional().describe("Disable/enable webhook"),
       deleted: z.boolean().optional().describe("true to soft-delete"),
     },
